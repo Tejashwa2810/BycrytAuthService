@@ -5,6 +5,7 @@ import com.example.bcryptauthservice.Models.User;
 import com.example.bcryptauthservice.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,12 +16,12 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/register")
-    public User register(UserDTO userDTO){
+    public User register(@RequestBody UserDTO userDTO){
         return userService.registerUser(userDTO);
     }
 
     @PostMapping("/login")
-    public User login(UserDTO userDTO){
+    public User login(@RequestBody UserDTO userDTO){
         return userService.loginUser(userDTO);
     }
 }
