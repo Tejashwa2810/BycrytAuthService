@@ -5,7 +5,11 @@ import com.example.bcryptauthservice.Exceptions.UserAlreadyExistsException;
 import com.example.bcryptauthservice.Exceptions.UserLoginWrongPassword;
 import com.example.bcryptauthservice.Exceptions.UserNotRegisteredException;
 import com.example.bcryptauthservice.Models.User;
+import com.example.bcryptauthservice.Models.UserSession;
 import com.example.bcryptauthservice.Repository.UserRepository;
+import com.example.bcryptauthservice.Repository.UserSessionRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +28,11 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private UserSessionRepository sessionRepository;
+    @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+    @Autowired
+    private SecretKey secretKey;
 
     public User registerUser(UserDTO userDTO) {
         Optional<User> existingUser = userRepository.getUserByEmail(userDTO.getEmail());
@@ -57,8 +65,8 @@ public class UserService {
         claim.put("exp", nowInMillis + 100000);
         claim.put("iss", "square_uas"); // Issued Source
 
-        MacAlgorithm algorithm = Jwts.SIG.HS256;
-        SecretKey secretKey = algorithm.key().build();
+//        MacAlgorithm algorithm = Jwts.SIG.HS256;
+//        SecretKey secretKey = algorithm.key().build();
 
         String token = Jwts.builder().claims(claim).signWith(secretKey).compact();
 
@@ -71,7 +79,36 @@ public class UserService {
 
          */
 
+        UserSession userSession = new UserSession();
+        userSession.setToken(token);
+        userSession.setUser(existingUser.get());
+        sessionRepository.save(userSession);
+
         return Pair.of(existingUser.get(), token);
+    }
+
+    public boolean validateToken(String token, int userId) {
+        Optional<UserSession> optionalUserSession = sessionRepository.findByTokenAndId(token, userId);
+
+        if (optionalUserSession.isEmpty()) {
+            return false;
+        }
+
+        UserSession userSession = optionalUserSession.get();
+        String persistedToken = userSession.getToken();
+
+        //Parsing token to get payload to get expiry
+        JwtParser jwtParser = Jwts.parser().verifyWith(secretKey).build();
+        Claims claims = jwtParser.parseClaimsJws(persistedToken).getBody();
+
+        Long expiry = (Long) claims.get("exp");
+        Long currentTime = System.currentTimeMillis();
+
+        if(currentTime > expiry) {
+            return false;
+        }
+
+        return true;
     }
 
 }
