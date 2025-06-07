@@ -62,7 +62,7 @@ public class UserService {
         claim.put("email", userDTO.getEmail());
         Long nowInMillis = System.currentTimeMillis();
         claim.put("iat", nowInMillis); // Issued at
-        claim.put("exp", nowInMillis + 100000);
+        claim.put("exp", nowInMillis + 1000000000);
         claim.put("iss", "square_uas"); // Issued Source
 
 //        MacAlgorithm algorithm = Jwts.SIG.HS256;
@@ -88,7 +88,7 @@ public class UserService {
     }
 
     public boolean validateToken(String token, int userId) {
-        Optional<UserSession> optionalUserSession = sessionRepository.findByTokenAndId(token, userId);
+        Optional<UserSession> optionalUserSession = sessionRepository.findByToken(token);
 
         if (optionalUserSession.isEmpty()) {
             return false;
@@ -99,7 +99,7 @@ public class UserService {
 
         //Parsing token to get payload to get expiry
         JwtParser jwtParser = Jwts.parser().verifyWith(secretKey).build();
-        Claims claims = jwtParser.parseClaimsJws(persistedToken).getBody();
+        Claims claims = jwtParser.parseSignedClaims(token).getPayload();
 
         Long expiry = (Long) claims.get("exp");
         Long currentTime = System.currentTimeMillis();
