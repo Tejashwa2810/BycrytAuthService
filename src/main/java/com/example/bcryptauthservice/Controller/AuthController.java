@@ -1,6 +1,7 @@
 package com.example.bcryptauthservice.Controller;
 
 import com.example.bcryptauthservice.DTOs.UserDTO;
+import com.example.bcryptauthservice.DTOs.ValidateTokenDTO;
 import com.example.bcryptauthservice.Models.User;
 import com.example.bcryptauthservice.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,16 @@ public class AuthController {
             return new ResponseEntity<>(userTokenPair.getFirst(), headers, HttpStatus.OK);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<String> validateToken(@RequestBody ValidateTokenDTO validateTokenDTO){
+        boolean result = userService.validateToken(validateTokenDTO.getToken(), validateTokenDTO.getUserId());
+        if(result){
+            return new ResponseEntity<>("SUCCESS", HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>("FAILURE", HttpStatus.BAD_REQUEST);
         }
     }
 }
